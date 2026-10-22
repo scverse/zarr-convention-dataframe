@@ -89,8 +89,8 @@ with other conventions present on the same node, as recommended by the spec.
         "zarr_conventions": [
             {
                 "uuid": "1f1b36d2-3185-6da8-91f6-9a0823af2d33",
-                "schema_url": "https://raw.githubusercontent.com/DOES_NOT_EXIST/zarr-dataframe/refs/tags/v1/schema.json",
-                "spec_url": "https://github.com/DOES_NOT_EXIST/zarr-dataframe/blob/v1/README.md",
+                "schema_url": "https://raw.githubusercontent.com/scverse/zarr-convention-dataframe/refs/tags/v1/schema.json",
+                "spec_url": "https://github.com/scverse/zarr-convention-dataframe/blob/v1/README.md",
                 "name": "df:",
                 "description": "A collection of 1d-interpreted arrays to be used as a dataframe"
             }
@@ -100,10 +100,8 @@ with other conventions present on the same node, as recommended by the spec.
 }
 ```
 
-> The `schema_url` / `spec_url` above point at a `v1` tag of a yet-to-be-named-organization-owned
-> repository as a worked default. This will be updated when we publish this
-> convention for the first time; per the spec, `uuid` is the stable identifier and the URLs are
-> resolution hints.
+> The `schema_url` / `spec_url` above point at a `v1` tag that does not exist yet.
+> This will be updated appropriately.
 
 ## Reading a dataframe
 
