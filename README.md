@@ -38,7 +38,7 @@ of a non-negative integer *i* with no sign and no leading zeros
 (e.g. `column_{i}` with *i* = 12 is the member named `column_12`).
 Let *n* = `df:shape[1]` be the number of columns.
 
-- `columns` (required if not present as `df:columns`): the column names of the dataframe, in order.
+- `columns` (required if not present as `df:columns`): the column names of the dataframe, in order. Must be a [string type][].
 - `column_{i}` for each 0 ≤ *i* < *n*: the column data.
   Members are numbered consecutively from `column_0` to `column_{n-1}` with no gaps.
 
@@ -53,6 +53,8 @@ For example, a dataframe with columns `["obs_id", "x", "y"]` and `df:index = 0` 
 | ------------ | ----------- | ----------- |
 | `columns`    | array | The columns names in column order. Mutually exclusive with `df:columns` |
 | `column_{i}` | array | Data of the *i*th column |
+
+[string type]: https://zarr.readthedocs.io/en/stable/user-guide/data_types/#string
 
 ### Semantics
 
