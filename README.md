@@ -29,7 +29,7 @@ I thus put forth a convention for dataframes in zarr, which is little more than 
 
 ## Layout
 
-A conforming node is a Zarr group whose children are all **1d-interpreted arrays**.
+A conforming node is a Zarr group whose children are all **1d-interpreted arrays** except `columns`, if present.
 The dataframe index, if present, counts as a column for all intents and purposes, as far as this spec is concerned.
 Column *names* are never stored as member names; they live in `columns`.
 
@@ -38,7 +38,7 @@ of a non-negative integer *i* with no sign and no leading zeros
 (e.g. `column_{i}` with *i* = 12 is the member named `column_12`).
 Let *n* = `df:shape[1]` be the number of columns.
 
-- `columns` (required): the column names of the dataframe, in order.
+- `columns` (required if not present as `df:columns`): the column names of the dataframe, in order. Must be a [string type][].
 - `column_{i}` for each 0 ≤ *i* < *n*: the column data.
   Members are numbered consecutively from `column_0` to `column_{n-1}` with no gaps.
 
@@ -51,8 +51,10 @@ For example, a dataframe with columns `["obs_id", "x", "y"]` and `df:index = 0` 
 
 | Member       | Kind        | Requirement |
 | ------------ | ----------- | ----------- |
-| `columns`    | array/group | The columns names in column order. |
-| `column_{i}` | array/group | Data of the *i*th column |
+| `columns`    | array | The columns names in column order. Mutually exclusive with `df:columns` |
+| `column_{i}` | array | Data of the *i*th column |
+
+[string type]: https://zarr.readthedocs.io/en/stable/user-guide/data_types/#string
 
 ### Semantics
 
@@ -70,10 +72,11 @@ The group’s `attributes` MUST contain a `zarr_conventions` entry (per the
 | --------------- | ------------ | ---- | ------- |
 | `df:shape`      | `integer[2]` | yes  | dataframe dimensions \[rows, columns\], useful for dataframes with no column or index |
 | `df:index`      | `integer`    | no   | column number of the dataframe index, if one exists. MUST satisfy 0 ≤ `df:index` < `df:shape[1]`; the index data is in member `column_{df:index}` |
+| `df:columns`    | `string[df:shape[1]]` | If `columns` is not an array | The columns of the array, in order. Data of the *i*th column. |
 
 `df:shape` MUST be consistent with the group’s members:
 
-- `df:shape[1]` MUST equal the length of `columns` (note again that the index counts as a column).
+- `df:shape[1]` MUST equal the length of `columns` OR `df:columns` (note again that the index counts as a column).
 - `df:shape[0]` MUST equal the length of every member except `columns`.
 
 Properties are namespaced with the `df:` prefix to avoid collisions
@@ -95,7 +98,8 @@ with other conventions present on the same node, as recommended by the spec.
                 "description": "A collection of 1d-interpreted arrays to be used as a dataframe"
             }
         ],
-        "df:shape": [300, 10]
+        "df:shape": [300, 10],
+        "df:columns": ["foo", "bar", "zap", "jazz", "boo", "hiss", "par", "yap", "lol", "bop"] # Only if there `columns` array is not present
     }
 }
 ```
@@ -110,7 +114,7 @@ A convention-aware reader:
 1. Reads the group’s `attributes.zarr_conventions` array and matches an entry by
    `uuid == "1f1b36d2-3185-6da8-91f6-9a0823af2d33"` (falling back to
    `schema_url`, then `spec_url`, per the spec’s identity precedence).
-2. Reads the `columns` child array/group and asserts that it has length `df:shape[1]`.
+2. Reads the `columns` child array/metadata and asserts that it has length `df:shape[1]`.
 3. Opens the child arrays/groups `column_0` … `column_{n-1}`, and names column *i* `columns[i]`.
 4. Constructs a 1d array out of each, and asserts their lengths each match `df:shape[0]` in their in-memory representation.
 5. Assembles a dataframe with the column order in `columns` if applicable to the in-memory data structure, treating the column referred to by `df:index` as index if possible.
