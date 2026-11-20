@@ -19,13 +19,15 @@ Terms that need clarification are in bold in the following text.
 
 ## Why a convention?
 
-A dataframe, [according to wikipedia][], is "A tabular data structure common to many data processing libraries" of which it then goes on to list a few. We all know dataframe libraries, like [polars][] or [pandas][] to reach for the lowest-hanging fruit. We are probably also familiar with the plethora of file formats that may back these data structures, like [parquet][] or the more new-fangled formats like [vortex][].
+A dataframe, [according to wikipedia][], is “A tabular data structure common to many data processing libraries” of which it then goes on to list a few.
+We all know dataframe libraries, like [polars][] or [pandas][] to reach for the lowest-hanging fruit.
+We are probably also familiar with the plethora of file formats that may back these data structures, like [parquet][] or the more new-fangled formats like [vortex][].
 
 However, for users of scientific data stored in zarr, the prospect of using a different file format for what is generally not a very big operation (relative to the scale of proper array data) is disheartening (at least for a file-format-freak like myself).
 
 And sometimes, you just want that collection of **1d-interpreted arrays** of the **same length** zipped up and packaged nicely in a data structure that we are all familiar with without that extra hassle.
 
-I thus put forth a convention for dataframes in zarr, which is little more than a(n optionally indexed) collection of **1d-interpreted arrays** (more on the bold text definitions below). 
+I thus put forth a convention for dataframes in zarr, which is little more than a(n optionally indexed) collection of **1d-interpreted arrays** (more on the bold text definitions below).
 
 ## Layout
 
@@ -33,9 +35,7 @@ A conforming node is a Zarr group whose children are all **1d-interpreted arrays
 The dataframe index, if present, counts as a column for all intents and purposes, as far as this spec is concerned.
 Column *names* are never stored as member names; they live in `columns`.
 
-In member names below, `{i}` is a placeholder for the base-10 representation
-of a non-negative integer *i* with no sign and no leading zeros
-(e.g. `column_{i}` with *i* = 12 is the member named `column_12`).
+In member names below, `{i}` is a placeholder for the base-10 representation of a non-negative integer *i* with no sign and no leading zeros (e.g. `column_{i}` with *i* = 12 is the member named `column_12`).
 Let *n* = `df:shape[1]` be the number of columns.
 
 - `columns` (required): the column names of the dataframe, in order.
@@ -46,38 +46,39 @@ Let *n* = `df:shape[1]` be the number of columns.
 
 All `column_{i}` members MUST have the **same length**.
 
-For example, a dataframe with columns `["obs_id", "x", "y"]` and `df:index = 0` has members
-`columns`, `column_0` (the index, named “obs_id”), `column_1` (“x”) and `column_2` (“y”).
+For example, a dataframe with columns `["obs_id", "x", "y"]` and `df:index = 0` has members `columns`, `column_0` (the index, named “obs_id”), `column_1` (“x”) and `column_2` (“y”).
 
-| Member       | Kind        | Requirement |
-| ------------ | ----------- | ----------- |
-| `columns`    | array/group | The columns names in column order. |
-| `column_{i}` | array/group | Data of the *i*th column |
+  | Member       | Kind        | Requirement                        |
+  | ------------ | ----------- | ---------------------------------- |
+  | `columns`    | array/group | The columns names in column order. |
+  | `column_{i}` | array/group | Data of the *i*th column           |
 
 ### Semantics
 
 Here we clearly define what we mean by:
 
-**1d-interpreted arrays**: This term is used to indicate that a group can be interpreted as a 1d array, such as the [`zarr-convention-enum`] or a future convention for genomics data that might have separate 1d arrays for chromosome/position/variant, but could be interpreted as a 1d array via a [custom extension array for genomics][]. A concrete example of this interpretability is anndata’s [nullable strings][].
+**1d-interpreted arrays**: This term is used to indicate that a group can be interpreted as a 1d array, such as the [`zarr-convention-enum`] or a future convention for genomics data that might have separate 1d arrays for chromosome/position/variant, but could be interpreted as a 1d array via a [custom extension array for genomics][].
+A concrete example of this interpretability is anndata’s [nullable strings][].
 **same length**: This means that the separate **1d-interpreted arrays** should all be of the same length i.e., be interpreted as 1d arrays of the same length whose entries’ positions within the array match that of another **1d-interpreted array**.
 
 ## Convention attributes
 
-The group’s `attributes` MUST contain a `zarr_conventions` entry (per the
-[spec][spec]) identifying this convention, plus the namespaced property below.
+The group’s `attributes` MUST contain a `zarr_conventions` entry (per the [spec][spec]) identifying this convention, plus the namespaced property below.
 
-| Attribute       | Type         | Req. | Meaning |
-| --------------- | ------------ | ---- | ------- |
-| `df:shape`      | `integer[2]` | yes  | dataframe dimensions \[rows, columns\], useful for dataframes with no column or index |
-| `df:index`      | `integer`    | no   | column number of the dataframe index, if one exists. MUST satisfy 0 ≤ `df:index` < `df:shape[1]`; the index data is in member `column_{df:index}` |
+  | Attribute  | Type         | Req. | Meaning                                             |
+  | ---------- | ------------ | ---- | --------------------------------------------------- |
+  | `df:shape` | `integer[2]` | yes  | dataframe dimensions \[rows, columns\]              |
+  | `df:index` | `integer`    | no   | column number of the dataframe index, if one exists |
 
-`df:shape` MUST be consistent with the group’s members:
+`df:shape` is useful for dataframes with no column or index.
+It MUST be consistent with the group’s members:
 
 - `df:shape[1]` MUST equal the length of `columns` (note again that the index counts as a column).
 - `df:shape[0]` MUST equal the length of every member except `columns`.
 
-Properties are namespaced with the `df:` prefix to avoid collisions
-with other conventions present on the same node, as recommended by the spec.
+`df:index` MUST satisfy 0 ≤ `df:index` < `df:shape[1]`; the index data is in member `column_{df:index}`.
+
+Properties are namespaced with the `df:` prefix to avoid collisions with other conventions present on the same node, as recommended by the spec.
 
 ### Minimal `zarr.json` (group)
 
@@ -107,9 +108,7 @@ with other conventions present on the same node, as recommended by the spec.
 
 A convention-aware reader:
 
-1. Reads the group’s `attributes.zarr_conventions` array and matches an entry by
-   `uuid == "1f1b36d2-3185-6da8-91f6-9a0823af2d33"` (falling back to
-   `schema_url`, then `spec_url`, per the spec’s identity precedence).
+1. Reads the group’s `attributes.zarr_conventions` array and matches an entry by `uuid == "1f1b36d2-3185-6da8-91f6-9a0823af2d33"` (falling back to `schema_url`, then `spec_url`, per the spec’s identity precedence).
 2. Reads the `columns` child array/group and asserts that it has length `df:shape[1]`.
 3. Opens the child arrays/groups `column_0` … `column_{n-1}`, and names column *i* `columns[i]`.
 4. Constructs a 1d array out of each, and asserts their lengths each match `df:shape[0]` in their in-memory representation.
@@ -119,31 +118,33 @@ A reader that does **not** know this convention still sees an ordinary group wit
 
 ## Versioning
 
-This is **v1**. Backwards-incompatible changes will bump the major version and
-the `v1` segment of `schema_url`. The `uuid` is permanent and does not change
-across versions. See the [spec’s versioning guidance][spec].
+This is **v1**.
+Backwards-incompatible changes will bump the major version and the `v1` segment of `schema_url`.
+The `uuid` is permanent and does not change across versions.
+See the [spec’s versioning guidance][spec].
 
 ## Relationship to `zarr-enum-convention`
 
 Categorical columns (as potentially represented on-disk in [`zarr-convention-enum`]) are some of the most common features of modern dataframes.
 
-Furthermore, this spec highlights the opportunity for a group to be interpreted as a 1d array if `codes` is 1d.  *We thus seek a way to formalize a group to indicate that it can be interpreted as 1d*.
+Furthermore, this spec highlights the opportunity for a group to be interpreted as a 1d array if `codes` is 1d.
+*We thus seek a way to formalize a group to indicate that it can be interpreted as 1d*.
 
 ## Relationship to AnnData
 
-| AnnData                          | This convention                                            |
-| -------------------------------- | ---------------------------------------------------------- |
-| `encoding-type: "dataframe"`     | `zarr_conventions[].uuid == 1f1b36d2-...`                  |
-| `encoding-version: "0.2.0"`      | the convention version (`v1`) via `schema_url` tag         |
-| `column-order: <array>`          | `columns`                                                  |
-| `_index`                         | `df:index`                                                 |
+  | AnnData                      | This convention                                    |
+  | ---------------------------- | -------------------------------------------------- |
+  | `encoding-type: "dataframe"` | `zarr_conventions[].uuid == 1f1b36d2-...`          |
+  | `encoding-version: "0.2.0"`  | the convention version (`v1`) via `schema_url` tag |
+  | `column-order: <array>`      | `columns`                                          |
+  | `_index`                     | `df:index`                                         |
 
-The byte-level layout of the arrays/group could be identical to
-AnnData’s, so existing data can be made conformant by renaming members and adding the JSON attributes, and potentially hardening some of the **1d-interpreted array** specifications currently in anndata, like [nullable strings][].
+The byte-level layout of the arrays/group could be identical to AnnData’s, so existing data can be made conformant by renaming members and adding the JSON attributes, and potentially hardening some of the **1d-interpreted array** specifications currently in anndata, like [nullable strings][].
 
 ## License
 
-BSD-3-Clause. See [LICENSE](./LICENSE).
+BSD-3-Clause.
+See [LICENSE](./LICENSE).
 
 [spec]: https://github.com/zarr-conventions/zarr-conventions-spec
 [anndata-df]: https://anndata.scverse.org/en/stable/fileformat-prose.html#dataframes
