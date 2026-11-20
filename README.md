@@ -52,7 +52,7 @@ For example, a dataframe with columns `["obs_id", "x", "y"]` and `df:index = 0` 
 | Member       | Kind        | Requirement |
 | ------------ | ----------- | ----------- |
 | `columns`    | array | The columns names in column order. Mutually exclusive with `df:columns` |
-| `column_{i}` | array | Data of the *i*th column |
+| `column_{i}` | array/group | Data of the *i*th column |
 
 [string type]: https://zarr.readthedocs.io/en/stable/user-guide/data_types/#string
 
@@ -99,7 +99,7 @@ with other conventions present on the same node, as recommended by the spec.
             }
         ],
         "df:shape": [300, 10],
-        "df:columns": ["foo", "bar", "zap", "jazz", "boo", "hiss", "par", "yap", "lol", "bop"] # Only if there `columns` array is not present
+        "df:columns": ["foo", "bar", "zap", "jazz", "boo", "hiss", "par", "yap", "lol", "bop"] // Only if there `columns` array is not present
     }
 }
 ```
